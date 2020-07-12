@@ -1,0 +1,58 @@
+version: "3"
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  app-network:
+
+services:
+  react:
+    build: ./frontend
+    ports:
+      - 80:80
+    restart: always
+    networks:
+      - app-network
+  spring-boot:
+    build: ./backend
+    ports:
+      - "4200:4200"
+    restart: always
+    networks:
+      - app-network
+    depends_on:
+      - mysql
+      - keycloak
+  mysql:
+    image: mysql:8
+    volumes:
+      - c:\mysql\volumes\docker-compose-demo:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: 123
+    restart: always
+    networks:
+      - app-network
+  keycloak:
+    image: jboss/keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      DB_VENDOR: mysql
+      DB_USER: keycloak
+      DB_PASSWORD: 123
+      DB_DATABASE: keycloak
+      # JDBC_PARAMS: "useSSL=false&allowPublicKeyRetrieval=true"
+    restart: always
+    networks:
+      - app-network
+    depends_on:
+      - mysql
