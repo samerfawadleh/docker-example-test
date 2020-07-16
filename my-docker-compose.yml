@@ -26,8 +26,8 @@ services:
       - app-network
     labels:
       - "traefik.http.services.react-service.loadbalancer.server.port=80"
-      - "traefik.http.routers.react-router.rule=Host(`localhost`)"
-      - "traefik.http.middlewares.test-redirectregex.redirectregex.regex=^http://localhost/google(.*)"
+      - "traefik.http.routers.react-router.rule=Host(`${HOST_NAME}`)"
+      - "traefik.http.middlewares.test-redirectregex.redirectregex.regex=^http://${HOST_NAME}/google(.*)"
       - "traefik.http.middlewares.test-redirectregex.redirectregex.replacement=https://google.com/"
       - "traefik.http.routers.react-router.middlewares=test-redirectregex"
     depends_on:
@@ -39,7 +39,7 @@ services:
       - app-network
     labels:
       - "traefik.http.services.spring-boot-service.loadbalancer.server.port=4200"
-      - "traefik.http.routers.spring-boot-router.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.spring-boot-router.rule=Host(`${HOST_NAME}`) && PathPrefix(`/api`)"
     depends_on:
       - mysql
       - keycloak
@@ -75,7 +75,7 @@ services:
       - app-network
     labels:
       - "traefik.http.services.keycloak-service.loadbalancer.server.port=8080"
-      - "traefik.http.routers.keycloak-router.rule=Host(`localhost`) && PathPrefix(`/auth`)"
+      - "traefik.http.routers.keycloak-router.rule=Host(`${HOST_NAME}`) && PathPrefix(`/auth`)"
     depends_on:
       - mysql
       - reverse-proxy
