@@ -8,23 +8,42 @@ networks:
   app-network:
 
 services:
-  react:
-    build: ./frontend
+  reverse-proxy:
+    image: traefik:2.2
+    command: --api.insecure=true --providers.docker
     ports:
       - 80:80
+      - 8080:8080
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app-network
+  react:
+    build: ./frontend
     restart: always
     networks:
       - app-network
+    labels:
+      - "traefik.http.services.react-service.loadbalancer.server.port=80"
+      - "traefik.http.routers.react-router.rule=Host(`localhost`)"
+      - "traefik.http.middlewares.test-redirectregex.redirectregex.regex=^http://localhost/google(.*)"
+      - "traefik.http.middlewares.test-redirectregex.redirectregex.replacement=https://google.com/"
+      - "traefik.http.routers.react-router.middlewares=test-redirectregex"
+    depends_on:
+      - reverse-proxy
   spring-boot:
     build: ./backend
-    ports:
-      - "4200:4200"
     restart: always
     networks:
       - app-network
+    labels:
+      - "traefik.http.services.spring-boot-service.loadbalancer.server.port=4200"
+      - "traefik.http.routers.spring-boot-router.rule=Host(`localhost`) && PathPrefix(`/api`)"
     depends_on:
       - mysql
       - keycloak
+      - reverse-proxy
   mysql:
     image: mysql:8
     volumes:
@@ -39,10 +58,10 @@ services:
     restart: always
     networks:
       - app-network
+    depends_on:
+      - reverse-proxy
   keycloak:
     image: jboss/keycloak
-    ports:
-      - "8080:8080"
     environment:
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
@@ -54,5 +73,9 @@ services:
     restart: always
     networks:
       - app-network
+    labels:
+      - "traefik.http.services.keycloak-service.loadbalancer.server.port=8080"
+      - "traefik.http.routers.keycloak-router.rule=Host(`localhost`) && PathPrefix(`/auth`)"
     depends_on:
       - mysql
+      - reverse-proxy
